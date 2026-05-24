@@ -1,7 +1,7 @@
 import requests
 import os
 
-GEMINI_API_KEY = os.getenv("AIzaSyBnZwqMC_vysVz0BwPdEZ9GBFfFx7kt9QE")
+GEMINI_API_KEY = os.getenv("AIzaSyDnNfOCkWBiABAcnIaUqTALRu2EA5hitEA")
 
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
