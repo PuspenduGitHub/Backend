@@ -5,7 +5,6 @@ import requests
 
 app = FastAPI()
 
-# ✅ Enable CORS (VERY IMPORTANT)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,10 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔑 PUT YOUR NEW API KEY HERE (old one may be invalid)
 OPENROUTER_API_KEY = "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"
 
-# ✅ Input model
 class SoilInput(BaseModel):
     moisture: int
     ph: float
@@ -26,73 +23,48 @@ class SoilInput(BaseModel):
     potassium: str
     temperature: int
 
-
-# ✅ Test route (check server working)
 @app.get("/")
 def home():
-    return {"message": "Backend running 🚀"}
+    return {"message": "API is working"}
 
-
-# ✅ Main AI route
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
 
     prompt = f"""
-Analyze this soil data:
+    Analyze this soil data:
 
-Moisture: {data.moisture}%
-pH: {data.ph}
-Nitrogen: {data.nitrogen}
-Phosphorus: {data.phosphorus}
-Potassium: {data.potassium}
-Temperature: {data.temperature}°C
+    Moisture: {data.moisture}%
+    pH: {data.ph}
+    Nitrogen: {data.nitrogen}
+    Phosphorus: {data.phosphorus}
+    Potassium: {data.potassium}
+    Temperature: {data.temperature}°C
 
-Give output in this format:
+    Give output in this format:
 
-SOIL ANALYSIS:
-Explain soil condition clearly.
+    SOIL ANALYSIS:
+    FERTILIZER RECOMMENDATION:
+    IRRIGATION ADVICE:
+    SUITABLE CROPS:
+    """
 
-FERTILIZER RECOMMENDATION:
-List exact fertilizers.
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "mistralai/mixtral-8x7b",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+    )
 
-IRRIGATION ADVICE:
-Give watering advice.
+    result = response.json()
 
-SUITABLE CROPS:
-Suggest crops.
-"""
-
-    try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                # ✅ stable model (important fix)
-                "model": "openai/gpt-3.5-turbo",
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ]
-            }
-        )
-
-        # 🔍 Debug (check terminal)
-        print("STATUS:", response.status_code)
-        print("RESPONSE:", response.text)
-
-        if response.status_code != 200:
-            return {"report": "API Error: " + response.text}
-
-        result = response.json()
-
-        if "choices" not in result:
-            return {"report": "Invalid response: " + str(result)}
-
-        output = result["choices"][0]["message"]["content"]
-
-        return {"report": output}
-
-    except Exception as e:
-        return {"report": "Server Error: " + str(e)}
+    if "choices" in result:
+        return {"report": result["choices"][0]["message"]["content"]}
+    else:
+        return {"report": str(result)}
