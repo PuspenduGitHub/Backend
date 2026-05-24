@@ -1,13 +1,25 @@
 import requests
-import os
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# ✅ TEMP HARDCODE (for testing)
+GEMINI_API_KEY = "AIzaSyDnNfOCkWBiABAcnIaUqTALRu2EA5hitEA"
+
+class SoilInput(BaseModel):
+    moisture: int
+    ph: float
+    nitrogen: str
+    phosphorus: str
+    potassium: str
+    temperature: int
 
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
 
     prompt = f"""
     Analyze this soil data:
-
     Moisture: {data.moisture}%
     pH: {data.ph}
     Nitrogen: {data.nitrogen}
