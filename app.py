@@ -1,19 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import requests
+from fastapi import FastAPI
+from pydantic import BaseModel
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ✅ Your Hugging Face Token
+HF_TOKEN = "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"
 
-OPENROUTER_API_KEY = "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"
+# ✅ Stable model (works better than flan-t5)
+API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom-560m"
+
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 class SoilInput(BaseModel):
     moisture: int
@@ -23,16 +22,11 @@ class SoilInput(BaseModel):
     potassium: str
     temperature: int
 
-@app.get("/")
-def home():
-    return {"message": "API is working"}
-
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
 
     prompt = f"""
     Analyze this soil data:
-
     Moisture: {data.moisture}%
     pH: {data.ph}
     Nitrogen: {data.nitrogen}
@@ -49,22 +43,24 @@ def analyze_soil(data: SoilInput):
     """
 
     response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "model": "mistralai/mixtral-8x7b",
-            "messages": [
-                {"role": "user", "content": prompt}
-            ]
-        }
+        API_URL,
+        headers=headers,
+        json={"inputs": prompt}
     )
+
+    print("STATUS:", response.status_code)
+    print("RESPONSE:", response.text)
 
     result = response.json()
 
-    if "choices" in result:
-        return {"report": result["choices"][0]["message"]["content"]}
-    else:
-        return {"report": str(result)}
+    # ✅ Handle errors (like model loading)
+    if isinstance(result, dict) and "error" in result:
+        return {"report": result["error"]}
+
+    # ✅ Extract output safely
+    try:
+        output = result[0]["generated_text"]
+    except:
+        output = str(result)
+
+    return {"report": output}
