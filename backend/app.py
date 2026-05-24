@@ -4,8 +4,11 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# ✅ TEMP HARDCODE (for testing)
-GEMINI_API_KEY = "AIzaSyDnNfOCkWBiABAcnIaUqTALRu2EA5hitEA"
+# 🔥 Paste your HuggingFace token here
+HF_TOKEN = "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"
+
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 class SoilInput(BaseModel):
     moisture: int
@@ -30,41 +33,24 @@ def analyze_soil(data: SoilInput):
     Give output in this format:
 
     SOIL ANALYSIS:
-    Explain soil condition clearly.
-
     FERTILIZER RECOMMENDATION:
-    List exact fertilizers.
-
     IRRIGATION ADVICE:
-    Give watering advice.
-
     SUITABLE CROPS:
-    Suggest crops.
     """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-
     response = requests.post(
-        url,
-        json={
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt}
-                    ]
-                }
-            ]
-        }
+        API_URL,
+        headers=headers,
+        json={"inputs": prompt}
     )
 
     print("STATUS:", response.status_code)
     print("RESPONSE:", response.text)
 
-    result = response.json()
-
     try:
-        output = result["candidates"][0]["content"]["parts"][0]["text"]
+        result = response.json()
+        output = result[0]["generated_text"]
     except:
-        output = str(result)
+        output = str(response.text)
 
     return {"report": output}
