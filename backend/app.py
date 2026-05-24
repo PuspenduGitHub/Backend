@@ -19,19 +19,19 @@ def analyze_soil(data: SoilInput):
     Give output in this format:
 
     SOIL ANALYSIS:
-    ...
+    Explain soil condition clearly.
 
     FERTILIZER RECOMMENDATION:
-    ...
+    List exact fertilizers.
 
     IRRIGATION ADVICE:
-    ...
+    Give watering advice.
 
     SUITABLE CROPS:
-    ...
+    Suggest crops.
     """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
 
     response = requests.post(
         url,
@@ -46,8 +46,10 @@ def analyze_soil(data: SoilInput):
         }
     )
 
+    print("STATUS:", response.status_code)
+    print("RESPONSE:", response.text)
+
     result = response.json()
-    print(result)
 
     try:
         output = result["candidates"][0]["content"]["parts"][0]["text"]
