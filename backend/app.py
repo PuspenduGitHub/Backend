@@ -1,5 +1,4 @@
-import os
-OPENROUTER_API_KEY = os.getenv("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")
+
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,8 +16,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔑 PUT YOUR NEW API KEY HERE (old one may be invalid)
-OPENROUTER_API_KEY = "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"
+import os
+OPENROUTER_API_KEY = os.getenv("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")
 
 # ✅ Input model
 class SoilInput(BaseModel):
