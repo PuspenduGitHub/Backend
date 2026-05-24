@@ -15,7 +15,7 @@ app.add_middleware(
 )
 
 # 🔑 PUT YOUR NEW API KEY HERE (old one may be invalid)
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 
 # ✅ Input model
 class SoilInput(BaseModel):
