@@ -4,11 +4,15 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# 🔥 Paste your HuggingFace token here
+# ✅ Your Hugging Face Token
 HF_TOKEN = "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"
 
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
-headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+# ✅ Stable model (works better than flan-t5)
+API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom-560m"
+
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 class SoilInput(BaseModel):
     moisture: int
@@ -47,10 +51,16 @@ def analyze_soil(data: SoilInput):
     print("STATUS:", response.status_code)
     print("RESPONSE:", response.text)
 
+    result = response.json()
+
+    # ✅ Handle errors (like model loading)
+    if isinstance(result, dict) and "error" in result:
+        return {"report": result["error"]}
+
+    # ✅ Extract output safely
     try:
-        result = response.json()
         output = result[0]["generated_text"]
     except:
-        output = str(response.text)
+        output = str(result)
 
     return {"report": output}
