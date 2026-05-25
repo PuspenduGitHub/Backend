@@ -1,16 +1,12 @@
 import requests
+import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
 
-HF_TOKEN = "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"
-
-API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom-560m"
-
-headers = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
+# ✅ Put your Gemini API key in Render ENV
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 class SoilInput(BaseModel):
     moisture: int
@@ -23,42 +19,52 @@ class SoilInput(BaseModel):
 
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
-    prompt = f"""
-    Analyze this soil data:
-    Moisture: {data.moisture}%
-    pH: {data.ph}
-    Nitrogen: {data.nitrogen}
-    Phosphorus: {data.phosphorus}
-    Potassium: {data.potassium}
-    Temperature: {data.temperature}°C
-
-    Give output:
-    SOIL ANALYSIS:
-    FERTILIZER:
-    IRRIGATION:
-    CROPS:
-    """
-
     try:
+        prompt = f"""
+        Analyze this soil data:
+        Moisture: {data.moisture}%
+        pH: {data.ph}
+        Nitrogen: {data.nitrogen}
+        Phosphorus: {data.phosphorus}
+        Potassium: {data.potassium}
+        Temperature: {data.temperature}°C
+
+        Give output in this format:
+
+        SOIL ANALYSIS:
+        FERTILIZER RECOMMENDATION:
+        IRRIGATION ADVICE:
+        SUITABLE CROPS:
+        """
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+
         response = requests.post(
-            API_URL,
-            headers=headers,
-            json={"inputs": prompt},
+            url,
+            json={
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt}
+                        ]
+                    }
+                ]
+            },
             timeout=30
         )
 
         print("STATUS:", response.status_code)
-        print("TEXT:", response.text)
+        print("RESPONSE:", response.text)
 
         result = response.json()
 
-        # 🔴 model loading case
-        if isinstance(result, dict) and "error" in result:
-            return {"report": "Model is loading... try again in 10 seconds"}
+        # ✅ Handle Gemini errors
+        if "error" in result:
+            return {"report": f"ERROR: {result['error']['message']}"}
 
-        output = result[0]["generated_text"]
+        output = result["candidates"][0]["content"]["parts"][0]["text"]
 
         return {"report": output}
 
     except Exception as e:
-        return {"report": f"Server error: {str(e)}"}
+        return {"report": f"SERVER ERROR: {str(e)}"}
