@@ -14,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔑 PUT YOUR NEW API KEY HERE (old one may be invalid)
+# 🔑 Use ENV in production (better)
 OPENROUTER_API_KEY = "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"
 
 # ✅ Input model
@@ -26,14 +26,12 @@ class SoilInput(BaseModel):
     potassium: str
     temperature: int
 
-
-# ✅ Test route (check server working)
+# ✅ Test route
 @app.get("/")
 def home():
     return {"message": "Backend running 🚀"}
 
-
-# ✅ Main AI route
+# ✅ Main route
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
 
@@ -63,29 +61,32 @@ Suggest crops.
 """
 
     try:
-       response = requests.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    headers={
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    },
-    json={
-        "model": "meta-llama/llama-3-8b-instruct",
-        "messages": [
-            {"role": "user", "content": prompt}
-        ]
-    }
-)
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                # ✅ WORKING FREE MODEL
+                "model": "meta-llama/llama-3-8b-instruct",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ]
+            },
+            timeout=30
+        )
 
-        # 🔍 Debug (check terminal)
         print("STATUS:", response.status_code)
         print("RESPONSE:", response.text)
 
+        # ❌ API error
         if response.status_code != 200:
             return {"report": "API Error: " + response.text}
 
         result = response.json()
 
+        # ❌ Unexpected response
         if "choices" not in result:
             return {"report": "Invalid response: " + str(result)}
 
