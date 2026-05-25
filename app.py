@@ -1,10 +1,11 @@
-import requests
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import requests
 
 app = FastAPI()
-from fastapi.middleware.cors import CORSMiddleware
 
+# ✅ Enable CORS (VERY IMPORTANT)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,11 +13,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ⚠️ REPLACE THIS WITH NEW KEY (your current one is exposed)
-OPENROUTER_API_KEY = "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"
 
-MODEL = "meta-llama/llama-3-8b-instruct"
+# 🔑 PUT YOUR NEW API KEY HERE (old one may be invalid)
+OPENROUTER_API_KEY = "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"
 
+# ✅ Input model
 class SoilInput(BaseModel):
     moisture: int
     ph: float
@@ -25,11 +26,20 @@ class SoilInput(BaseModel):
     potassium: str
     temperature: int
 
+
+# ✅ Test route (check server working)
+@app.get("/")
+def home():
+    return {"message": "Backend running 🚀"}
+
+
+# ✅ Main AI route
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
-    try:
-        prompt = f"""
+
+    prompt = f"""
 Analyze this soil data:
+
 Moisture: {data.moisture}%
 pH: {data.ph}
 Nitrogen: {data.nitrogen}
@@ -38,40 +48,50 @@ Potassium: {data.potassium}
 Temperature: {data.temperature}°C
 
 Give output in this format:
+
 SOIL ANALYSIS:
+Explain soil condition clearly.
+
 FERTILIZER RECOMMENDATION:
+List exact fertilizers.
+
 IRRIGATION ADVICE:
+Give watering advice.
+
 SUITABLE CROPS:
+Suggest crops.
 """
 
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://your-app.onrender.com",  # ✅ REQUIRED
-                "X-Title": "AgriRoverAI"  # ✅ REQUIRED
-            },
-            json={
-                "model": MODEL,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ]
-            },
-            timeout=30
-        )
+    try:
+       response = requests.post(
+    "https://openrouter.ai/api/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "meta-llama/llama-3-8b-instruct",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+)
 
+        # 🔍 Debug (check terminal)
         print("STATUS:", response.status_code)
         print("RESPONSE:", response.text)
 
+        if response.status_code != 200:
+            return {"report": "API Error: " + response.text}
+
         result = response.json()
 
-        if "error" in result:
-            return {"report": f"ERROR: {result['error']['message']}"}
+        if "choices" not in result:
+            return {"report": "Invalid response: " + str(result)}
 
         output = result["choices"][0]["message"]["content"]
 
         return {"report": output}
 
     except Exception as e:
-        return {"report": f"SERVER ERROR: {str(e)}"}
+        return {"report": "Server Error: " + str(e)}
