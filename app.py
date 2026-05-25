@@ -3,7 +3,15 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ⚠️ REPLACE THIS WITH NEW KEY (your current one is exposed)
 OPENROUTER_API_KEY = "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"
 
