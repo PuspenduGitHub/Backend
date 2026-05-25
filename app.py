@@ -20,46 +20,45 @@ class SoilInput(BaseModel):
     potassium: str
     temperature: int
 
+
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
+    prompt = f"""
+    Analyze this soil data:
+    Moisture: {data.moisture}%
+    pH: {data.ph}
+    Nitrogen: {data.nitrogen}
+    Phosphorus: {data.phosphorus}
+    Potassium: {data.potassium}
+    Temperature: {data.temperature}°C
+
+    Give output:
+    SOIL ANALYSIS:
+    FERTILIZER:
+    IRRIGATION:
+    CROPS:
+    """
+
     try:
-        prompt = f"""
-        Analyze this soil data:
-        Moisture: {data.moisture}%
-        pH: {data.ph}
-        Nitrogen: {data.nitrogen}
-        Phosphorus: {data.phosphorus}
-        Potassium: {data.potassium}
-        Temperature: {data.temperature}°C
-
-        Give output in this format:
-
-        SOIL ANALYSIS:
-        FERTILIZER RECOMMENDATION:
-        IRRIGATION ADVICE:
-        SUITABLE CROPS:
-        """
-
         response = requests.post(
             API_URL,
             headers=headers,
-            json={"inputs": prompt}
+            json={"inputs": prompt},
+            timeout=30
         )
 
         print("STATUS:", response.status_code)
-        print("RAW:", response.text)
+        print("TEXT:", response.text)
 
         result = response.json()
 
+        # 🔴 model loading case
         if isinstance(result, dict) and "error" in result:
-            return {"report": f"HF ERROR: {result['error']}"}
+            return {"report": "Model is loading... try again in 10 seconds"}
 
-        if isinstance(result, list) and len(result) > 0:
-            output = result[0].get("generated_text", "No output")
-        else:
-            output = str(result)
+        output = result[0]["generated_text"]
 
         return {"report": output}
 
     except Exception as e:
-        return {"report": f"SERVER ERROR: {str(e)}"}
+        return {"report": f"Server error: {str(e)}"}
