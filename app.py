@@ -1,12 +1,14 @@
 import requests
-import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
 
-# ✅ Put your Gemini API key in Render ENV
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# 🔥 Paste your OpenRouter API Key here
+OPENROUTER_API_KEY = "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"
+
+# ✅ Free model (no billing needed)
+MODEL = "mistralai/mistral-7b-instruct"
 
 class SoilInput(BaseModel):
     moisture: int
@@ -16,38 +18,37 @@ class SoilInput(BaseModel):
     potassium: str
     temperature: int
 
-
 @app.post("/analyze")
 def analyze_soil(data: SoilInput):
     try:
         prompt = f"""
-        Analyze this soil data:
-        Moisture: {data.moisture}%
-        pH: {data.ph}
-        Nitrogen: {data.nitrogen}
-        Phosphorus: {data.phosphorus}
-        Potassium: {data.potassium}
-        Temperature: {data.temperature}°C
+Analyze this soil data:
 
-        Give output in this format:
+Moisture: {data.moisture}%
+pH: {data.ph}
+Nitrogen: {data.nitrogen}
+Phosphorus: {data.phosphorus}
+Potassium: {data.potassium}
+Temperature: {data.temperature}°C
 
-        SOIL ANALYSIS:
-        FERTILIZER RECOMMENDATION:
-        IRRIGATION ADVICE:
-        SUITABLE CROPS:
-        """
+Give output in this format:
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+SOIL ANALYSIS:
+FERTILIZER RECOMMENDATION:
+IRRIGATION ADVICE:
+SUITABLE CROPS:
+"""
 
         response = requests.post(
-            url,
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
             json={
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt}
-                        ]
-                    }
+                "model": MODEL,
+                "messages": [
+                    {"role": "user", "content": prompt}
                 ]
             },
             timeout=30
@@ -58,11 +59,11 @@ def analyze_soil(data: SoilInput):
 
         result = response.json()
 
-        # ✅ Handle Gemini errors
+        # ✅ Handle errors
         if "error" in result:
             return {"report": f"ERROR: {result['error']['message']}"}
 
-        output = result["candidates"][0]["content"]["parts"][0]["text"]
+        output = result["choices"][0]["message"]["content"]
 
         return {"report": output}
 
