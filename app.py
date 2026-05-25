@@ -7,7 +7,7 @@ app = FastAPI()
 # ⚠️ REPLACE THIS WITH NEW KEY (your current one is exposed)
 OPENROUTER_API_KEY = "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"
 
-MODEL = "mistralai/mistral-7b-instruct"
+MODEL = "meta-llama/llama-3-8b-instruct"
 
 class SoilInput(BaseModel):
     moisture: int
